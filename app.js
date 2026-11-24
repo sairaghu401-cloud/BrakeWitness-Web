@@ -112,7 +112,50 @@ motion(preference.matches);
 preference.onchange = e => {if (!manual) motion(e.matches)};
 $('motion').onclick = () => {manual = true; motion($('motion').getAttribute('aria-pressed') !== 'true')};
 
-let active, kind = 0, timer;
+// Start with the shadow case so a first-time viewer sees why speed alone is insufficient.
+let active, kind = 2, timer;
+const questions = [
+  'What does a drive with no braking look like?',
+  'Did the camera detect a real obstacle?',
+  'Why would a car brake for a shadow?',
+  'Did the brakes receive the command the controller sent?',
+  'Can we trust a speed reading that changed after the drive?'
+];
+const watchFor = [
+  'Follow the full drive. The clear lane is the baseline for comparing every other case.',
+  'At 4 s, compare the cone on the road with the camera reading. Then watch for the first change in speed.',
+  'At 4 s, compare what is on the road with what the camera reports. A brightness below 100 triggers an obstacle detection.',
+  'At 4 s, compare the controller’s request with the command received by the brakes.',
+  'Watch the car finish the drive. Then compare the recorded speed before and after the edit.'
+];
+const hero = document.querySelector('.hero p');
+hero.textContent = 'A cone, a shadow and an unexpected command can all slow a car from 60 to 36 km/h. BrakeWitness checks the recorded evidence, then explains which one happened.';
+document.querySelector('#simulator > p').textContent = 'Start with the shadow drive. Press Run to watch it unfold, or jump to 4 seconds to inspect the first braking command.';
+const scenarioBar = $('scenarios');
+scenarioBar.insertAdjacentHTML('beforebegin','<h3>Choose a simulated drive</h3>');
+scenarioBar.insertAdjacentHTML('afterend','<section class="verdict" aria-labelledby="case-question"><h3 id="case-question"></h3><p id="watch-for"></p></section>');
+const scene = document.querySelector('.scene');
+scene.insertAdjacentHTML('afterend','<dl class="metrics" aria-label="Simulated signals at the displayed second" id="signal-strip"></dl>');
+const stripFields = ['On the road','Camera sees','Controller asks','Brakes receive'];
+$('signal-strip').innerHTML = stripFields.map((label,i) =>
+  '<div><dt>'+label+'</dt><dd id="signal-'+i+'"></dd></div>').join('');
+const status = $('status');
+scene.insertAdjacentElement('afterend', status);
+status.insertAdjacentHTML('afterend','<div id="decision" class="verdict" hidden><div class="eyebrow">[ simulated drive result ]</div><h3 id="decision-title"></h3><p id="decision-basis"></p><a href="#evidence">Inspect the recorded evidence ↓</a></div>');
+document.querySelector('#detail').closest('details').open = false;
+document.querySelector('#detail').closest('details').querySelector('summary').textContent = 'View raw record (JSON)';
+const timeline = document.querySelector('.scrollbox');
+const timelineHeading = timeline.previousElementSibling;
+timelineHeading.insertAdjacentHTML('beforebegin','<details id="timeline-detail"><summary>Explore all four signals, second by second</summary></details>');
+$('timeline-detail').append(timeline);
+timelineHeading.remove();
+document.querySelector('.comparison h3').textContent = 'This drive versus normal driving';
+document.querySelector('#evidence > p').textContent = 'First check whether the stored readings are intact. Only verified evidence can support a braking diagnosis.';
+const seedLabel = $('seed').closest('label');
+seedLabel.insertAdjacentHTML('beforebegin','<details id="seed-options"><summary>Test settings</summary></details>');
+$('seed-options').append(seedLabel);
+seedLabel.title = 'Sets the repeatable brightness variation on a clear road.';
+$('seed-options').insertAdjacentHTML('beforeend','<small>Changes the clear-road brightness pattern.</small>');
 names.forEach((name,i) => {
   const button = document.createElement('button');
   button.textContent = name;
@@ -190,11 +233,27 @@ function renderRoad(s,r) {
   $('clock').textContent = s.t+' s / 11 s · '+speed;
   $('road-title').textContent = 'Simulated road at '+s.t+' seconds, '+speed+', '+(cone?'cone ahead':shadow?'shadow on clear lane':'clear lane');
   const mismatch = r.controller_command !== r.actuator_command;
-  const info = mismatch ? 'Camera correct. Controller Release → actuator Brake. Intent cannot be inferred.' :
-    shadow ? 'Camera wrong. Shadow detected as an obstacle. Both commands agree on Brake.' :
-    cone ? 'Cone ahead. Camera and road truth agree. Both commands request Brake.' :
-    'Road clear. Controller and actuator agree on Release.';
-  $('status').textContent = 'Simulated · '+(s.error || info);
+  const brakingCase = s.kind >= 1 && s.kind <= 3;
+  const phase = s.t === 0 ? 'Ready' : s.t < 4 ? 'Approach' : event && brakingCase ? 'Braking' :
+    s.t === last ? 'Drive complete' : brakingCase ? 'After braking' : 'Cruising';
+  const observation = mismatch ? 'The lane is clear. The controller asks for Release, but the brakes receive Brake.' :
+    shadow ? 'A shadow crosses an empty lane. The camera reports an obstacle and the controller requests Brake.' :
+    cone ? 'A cone is on the road. The camera detects it and the controller requests Brake.' :
+    s.t >= 7 && brakingCase ? 'The braking commands have ended. The car continues at 36 km/h.' :
+    'The lane is clear and the car is travelling at 60 km/h.';
+  const timing = brakingCase && s.t === 4 ? ' Speed is measured before the command takes effect.' :
+    brakingCase && s.t === 5 ? ' The first speed drop is visible now: 60 → 52 km/h.' : '';
+  $('status').textContent = 'Simulated · '+phase+' · '+(s.error || observation+timing);
+  $('case-question').textContent = questions[s.kind];
+  $('watch-for').textContent = watchFor[s.kind];
+  const readings = [cone?'Cone ahead':shadow?'Shadow only':'Clear lane',
+    r.camera_observation.obstacle_detected?'Obstacle':'Clear lane',r.controller_command,r.actuator_command];
+  readings.forEach((value,i)=>{
+    const field = $('signal-'+i);
+    field.textContent = value;
+    field.classList.toggle('difference', (shadow && i===1) || (mismatch && i===3));
+  });
+  $('jump').textContent = s.kind===4 ? 'Show the post-drive edit' : s.kind===0 ? 'Jump to end of drive' : 'Jump to first event · 4 s';
   $('edit-note').hidden = !(s.kind === 4 && s.checkpoint && s.t === last && s.audit && !s.audit.ok);
 }
 function renderGraph(s) {
@@ -223,6 +282,12 @@ function renderTables(s,r) {
 function renderEvidence(s) {
   const a = s.audit;
   const finding = a ? diagnose(s.records,a) : ['Awaiting verification','Complete the simulated drive to seal and verify the full capture.'];
+  $('decision').hidden = !a || s.t !== last;
+  if (a && s.t === last) {
+    $('decision-title').textContent = finding[0];
+    $('decision-basis').textContent = a.ok ? 'All 12 records verified. '+finding[1] :
+      'Record '+(a.index ?? 'checkpoint')+' failed verification. '+finding[1];
+  }
   $('finding').textContent = finding[0]; $('explain').textContent = finding[1];
   $('sample').innerHTML = s.records.map((_,i)=>'<option value="'+i+'">'+(i+1)+' / 12</option>').join('');
   $('sample').value = s.inspected;
@@ -243,7 +308,7 @@ function render(s) {
   $('step').disabled = s.running || s.busy || !!s.error || s.t===last;
   $('scrub').disabled = s.busy || !!s.error; $('scrub').value = s.t;
   $('scrub').setAttribute('aria-valuetext',s.t+' seconds');
-  $('jump').disabled = s.busy || !!s.error || s.kind===0;
+  $('jump').disabled = s.busy || !!s.error;
   $('sample').disabled = s.busy || !s.records.length;
   for (const id of ['verify','json','csv']) $(id).disabled = !s.audit || s.busy;
   renderRoad(s,r); renderGraph(s); renderTables(s,r); renderEvidence(s);
@@ -255,7 +320,7 @@ $('reset').onclick = reset;
 $('seed').onchange = () => {if ($('seed').reportValidity()) reset()};
 $('rate').onchange = () => {if (active.running && !active.busy) schedule(active)};
 $('scrub').oninput = () => {const t = Number($('scrub').value); pause(); seek(t)};
-$('jump').onclick = () => {pause(); seek(active.kind===4 ? last : 4)};
+$('jump').onclick = () => {pause(); seek(active.kind===4 || active.kind===0 ? last : 4)};
 $('sample').onchange = () => {pause(); active.inspected = Number($('sample').value); render(active)};
 $('verify').onclick = recheck;
 function download(format) {
