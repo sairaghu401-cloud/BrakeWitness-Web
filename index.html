@@ -34,7 +34,7 @@
 </g></symbol></defs></svg>
 <header><div class="wrap nav"><a class="brand" href="#overview"><svg aria-hidden="true"><use href="#mark"/></svg>BrakeWitness</a><nav aria-label="Main navigation"><a href="#overview">Overview</a><a href="#architecture">Architecture</a><a href="#simulator">Simulator</a></nav><button id="motion" aria-pressed="false"><span class="switch"></span>Reduce motion</button></div></header>
 <main id="main"><section class="hero wrap" id="overview">
-<div><div class="eyebrow"><i></i>[ secure event recording ]</div><h1>Brake<span>Witness</span></h1><h2>A black box for autonomous<br>braking incidents.</h2><p>Trace a braking event from the first sensor reading to a signed evidence record. Replay the incident and see exactly what changed.</p>
+<div><div class="eyebrow"><i></i>[ secure event recording ]</div><h1>Brake<span>Witness</span></h1><h2>A black box for autonomous<br>braking incidents.</h2><p>Three cars slow from 60 to 36 km/h. Their speed traces match. Follow the evidence from road to actuator to discover why each one braked.</p>
 <div class="actions"><a class="primary" href="#simulator">Open simulator <b>↗</b></a><a class="secondary" href="#architecture">How it works <b>↓</b></a></div><small>ⓘ &nbsp;Software simulation. No physical hardware is connected.</small></div>
 <figure class="panel"><figcaption><strong><i></i> Vehicle schematic</strong><span>FIG. 01 / TOP VIEW</span></figcaption>
 <svg class="drawing" viewBox="0 0 510 240" role="img" aria-label="Top view of a vehicle. Wheel sensors send brake data to the central event recorder.">
@@ -43,17 +43,73 @@
 <g fill="none" stroke="#ac432b"><path d="M212 132V54l19-19h69 M140 185v20l-12 12H58"/><circle cx="212" cy="132" r="4" fill="#af432b"/><path class="radar" d="M404 113q12 18 0 36 M414 106q17 25 0 50 M424 99q23 31 0 63"/><circle cx="140" cy="185" r="3" fill="#af432b"/></g><g class="svgtype"><text x="232" y="30">EVENT RECORDER</text><text x="56" y="231">WHEEL SENSOR</text></g>
 </svg><div class="trace"><span>BRAKE SIGNAL</span><svg viewBox="0 0 250 30" aria-hidden="true"><path d="M0 23h41l4-3 3 3h28l5-5 5 4h18l4-3 5 3 7-17 5 20 6-16 5 9h17l6-3 6 5h85"/><circle class="signal" cx="122" cy="8" r="3"/></svg><em>● &nbsp;DEMO</em></div></figure></section>
 <section class="section wrap" id="architecture"><div class="eyebrow">01 / Architecture</div><h2>Four parts. Four separate jobs.</h2><div class="cards" id="cards"></div></section>
-<section class="section wrap" id="journey"><div class="eyebrow">02 / Evidence flow</div><h2>The data journey.</h2><div class="flow"><div class="nodes" id="nodes"></div><svg class="route" viewBox="0 0 800 34" preserveAspectRatio="none" aria-hidden="true">
-  <path class="wire" d="M12 7H788M788 7v18H12"/>
-  <path class="packet" d="M12 7H788"/>
-  <path class="packet return" d="M788 25H12"/>
-</svg><div class="lane"><strong>TAMPER CHECK</strong><span>Recompute hash → Check signature → Check previous link</span></div></div></section>
-<section class="section wrap" id="simulator"><div class="eyebrow">03 / Simulator</div><h2>Simulation workbench.</h2><p>Choose an incident, then run the scene or advance one sample at a time.</p>
-<div class="bench"><div class="scenarios" id="scenarios" role="group" aria-label="Scenario"></div>
-<div class="controls"><button id="run" class="primary">▶ Run</button><button id="step">Step →</button><button id="reset">Reset</button><label>Speed <select id="rate"><option>0.5</option><option selected>1</option><option>2</option><option>5</option><option>10</option></select> ×</label><label>Seed <input id="seed" type="number" min="0" max="4294967295" step="1" value="42"></label></div>
-<svg viewBox="0 0 780 104" class="road" role="img" aria-label="Vehicle position and braking state along a simulated road"><rect width="780" height="104" fill="url(#grid)"/><path d="M10 24h760M10 80h760" stroke="#b3b4a9"/><path d="M10 52h760" stroke="#b3b4a9" stroke-dasharray="15 10"/><rect id="target" x="715" y="32" width="14" height="40" fill="url(#hatch)" stroke="#ae4028"/><g id="car"><use href="#vehicle" width="90" height="40" y="32"/></g></svg>
-<p id="status" role="status"></p><dl class="metrics" id="metrics"></dl></div></section>
-<section class="section wrap" id="evidence"><div class="eyebrow">04 / Investigation</div><h2>Evidence replay.</h2><p>Inspect a captured sample and verify its signed sensor readings.</p>
-<div class="bench"><div class="controls"><label>Sample <input id="cursor" type="range" min="1" max="1" value="1" disabled></label><button id="verify" disabled>Verify chain</button><button id="json" disabled>Export JSON ↓</button><button id="csv" disabled>Export CSV ↓</button></div><div id="detail">Awaiting a braking event.</div><p id="audit" role="status"></p></div></section></main>
+<section class="section wrap" id="journey">
+  <div class="eyebrow">02 / Evidence flow</div><h2>The data journey.</h2>
+  <div class="flow">
+    <div class="nodes" id="nodes"></div>
+    <svg class="route" viewBox="0 0 800 34" preserveAspectRatio="none" aria-hidden="true">
+      <path class="wire" d="M12 7H788v18H12"/><path class="packet" d="M12 7H788"/>
+      <path class="packet return" d="M788 25H12"/>
+    </svg>
+    <div class="lane"><strong>Tamper check</strong><ol id="checks">
+      <li>Recompute hash</li><li>Check signature (HMAC)</li><li>Check previous link</li><li>Check checkpoint</li>
+    </ol></div>
+    <p id="flow-note" class="caption"></p>
+  </div>
+</section>
+<section class="section wrap" id="simulator">
+  <div class="eyebrow">03 / Simulator</div><h2>Simulation workbench.</h2>
+  <p>Choose a drive. Watch what the camera sees, what the controller asks for and what the actuator receives.</p>
+  <div class="bench">
+    <div class="scenarios" id="scenarios" role="group" aria-label="Simulated drive"></div>
+    <div class="controls">
+      <button id="run" class="primary">Run</button><button id="pause">Pause</button><button id="step">Step →</button><button id="reset">Reset</button>
+      <label>Speed <select id="rate"><option value=".5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="5">5×</option><option value="10">10×</option></select></label>
+      <label>Seed <input id="seed" type="number" min="0" max="4294967295" step="1" value="42" required></label>
+    </div>
+    <figure class="scene"><figcaption><strong>Simulated road</strong><span id="clock">0 s / 11 s</span></figcaption>
+      <svg class="road" viewBox="0 0 760 120" role="img" aria-labelledby="road-title">
+        <title id="road-title">Simulated road at the start of the drive</title>
+        <rect width="760" height="120" fill="url(#grid)"/><path d="M0 19H760M0 101H760" stroke="#777b70"/>
+        <path id="stripe" d="M0 62H760" stroke="#a3a69a" stroke-width="2" stroke-dasharray="20 20"/>
+        <g id="hazard"><ellipse id="shadow" cx="0" cy="61" rx="43" ry="19" fill="#575d54" transform="rotate(-14 0 61)"/>
+          <g id="cone"><path d="m0 39 13 33h-26z" fill="#ad432a" stroke="#6f2919"/><path d="m-5 54 10 0 3 7h-16z" fill="#fff8ed"/><path d="M-16 74h32" stroke="#542f23" stroke-width="4"/></g>
+        </g>
+        <g id="car"><use href="#vehicle" x="0" y="35" width="120" height="52"/>
+          <g id="lights" fill="#e54b29" stroke="#963520"><circle cx="7" cy="47" r="4"/><circle cx="7" cy="75" r="4"/></g>
+        </g>
+      </svg>
+    </figure>
+    <div class="controls"><label class="scrub">Drive time <input id="scrub" type="range" min="0" max="11" value="0"></label>
+      <button id="jump">Jump to first event</button></div>
+    <p id="status" role="status"></p><div id="edit-note" hidden><strong>Simulated post-drive edit · Record 7</strong>
+      <div class="edit-trail">Sealed <b>60 km/h</b> → Edited <b>67 km/h</b> → Verification <b>failed</b></div>
+      <a href="#evidence">Inspect evidence ↓</a></div>
+    <div class="comparison">
+      <div><h3>Live comparison</h3><table><caption>Simulated readings at the selected second</caption>
+        <thead><tr><th>Reading</th><th>Selected</th><th>Normal</th></tr></thead><tbody id="live"></tbody></table></div>
+      <figure><h3>Speed trace</h3><figcaption class="caption">Simulated motion · km/h against seconds</figcaption>
+        <svg id="graph" viewBox="0 0 400 145" role="img" aria-label="Simulated speed comparison"></svg>
+        <small><b class="keyline"></b> Selected &nbsp; <b class="keyline reference"></b> Normal reference</small>
+      </figure>
+    </div>
+    <h3>Four evidence channels</h3>
+    <div class="scrollbox" tabindex="0" role="region" aria-label="Scrollable simulated evidence timeline">
+      <table class="timeline"><caption>Simulated observations · one column per second · shaded cells differ from normal</caption>
+        <thead id="times"></thead><tbody id="channels"></tbody></table>
+    </div>
+  </div>
+</section>
+<section class="section wrap" id="evidence">
+  <div class="eyebrow">04 / Investigation</div><h2>Evidence replay.</h2>
+  <p>Inspect the stored record, verify the full capture, then read the finding.</p>
+  <div class="bench"><div class="controls">
+    <label>Sample <select id="sample"></select></label><button id="verify">Verify chain</button>
+    <button id="json">Export JSON ↓</button><button id="csv">Export CSV ↓</button>
+  </div><div id="audit" role="status"></div><div class="verdict"><div class="eyebrow">[ simulated finding ]</div><h3 id="finding"></h3><p id="explain"></p></div>
+  <details open><summary>Simulated evidence record</summary><pre id="detail"></pre></details></div>
+  <aside class="limitations"><h3>Limitations</h3><p>The secret key and authenticated checkpoint exist only in this page session. Reset, a new drive or reload discards the verifier for the previous capture. Exports preserve evidence for inspection. Verification assumes the recorder was trustworthy at capture.</p>
+    <p>This simulation illustrates cybersecurity risk-management ideas related to ISO/SAE 21434. It makes no claim of compliance.</p></aside>
+</section></main>
 <footer><div class="wrap"><strong>BrakeWitness</strong><span>Malluri Sai Raghu · KL University, Vijayawada</span><a href="#overview">Back to top ↑</a><a href="#simulator">Simulator</a></div></footer>
 </body></html>
