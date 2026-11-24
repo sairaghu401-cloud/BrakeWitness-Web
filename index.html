@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f5f3ed">
+<title>BrakeWitness – Secure Digital Black Box for Autonomous Vehicle Braking Incident Analysis</title>
+<link rel="stylesheet" href="style.css"><script src="app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<!-- Shared line-art symbols keep all diagrams self-contained. -->
+<svg class="defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+<symbol id="mark" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#ae4028"/><path d="M5 17h5l3-7 4 14 3-12 2 5h5" fill="none" stroke="white" stroke-width="2.2" stroke-linejoin="round"/></symbol>
+<symbol id="sense" viewBox="0 0 24 24"><path d="M3 13h4l3-8 4 14 3-9 2 3h2"/></symbol>
+<symbol id="record" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="12" cy="12" r="3.5"/></symbol>
+<symbol id="secure" viewBox="0 0 24 24"><path d="m12 3 8 3v6q-1 6-8 9-7-3-8-9V6z M8.5 12l2.5 2.5 4.5-5"/></symbol>
+<symbol id="analyse" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6.5"/><path d="m15 15 6 6 M6 11h2l1.5-3 2 5 1.5-3h1"/></symbol>
+<pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0v20" fill="none" stroke="#d9d8ce" stroke-width=".7"/></pattern>
+<pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse"><path d="m0 6 6-6" stroke="#bc5b40" stroke-width="1"/></pattern>
+<symbol id="vehicle" viewBox="0 0 310 132">
+<g stroke-linejoin="round" stroke-linecap="round">
+<g fill="#494a44"><rect x="48" y="7" width="49" height="16" rx="6"/><rect x="213" y="7" width="46" height="16" rx="6"/><rect x="48" y="109" width="49" height="16" rx="6"/><rect x="213" y="109" width="46" height="16" rx="6"/></g>
+<g stroke="#454740" stroke-width="2">
+<path fill="#d7d8cd" d="M20 24Q28 16 60 15L235 17Q276 18 292 33Q304 45 304 65T292 100Q276 115 235 116L60 117Q28 117 19 107Q8 93 8 66T20 24Z"/>
+<path fill="#eeeee5" d="M24 30Q37 21 69 21L229 23Q270 22 290 40Q300 66 290 92Q270 110 229 109L69 111Q37 111 24 102Q13 66 24 30Z"/>
+<path fill="#bcc2b7" d="M53 29Q35 65 53 103L90 94Q77 66 90 38Z M164 37L198 25Q225 65 198 107L164 94Q183 66 164 37Z"/>
+<path fill="#dedfd4" d="M91 38Q120 30 161 37Q178 66 161 94Q122 102 91 94Q77 66 91 38Z"/>
+<path fill="#a9afa5" d="m82 26 100 1-23 7-66 1z M82 106l100-1-23-7-66-1z"/>
+<path fill="none" stroke="#989d91" d="M208 28q48 2 69 14 M208 104q48-2 69-14 M216 33l52 12 M216 99l52-12 M29 36q-10 28 0 58 M114 40v52 M189 30q16 35 0 72"/>
+<path fill="#c9ccc1" d="m184 25 5-15q9-4 9 2l-3 13z M184 107l5 15q9 4 9-2l-3-13z"/>
+<path fill="#555a51" d="m279 30 12 7 5 13-9-7z M279 102l12-7 5-13-9 7z"/>
+<path fill="#b54930" d="m18 33 6-6-3 17-6 6z M18 99l6 6-3-17-6-6z"/>
+</g><g stroke="#af432b" fill="none"><path stroke-dasharray="4 3" d="M72 22v44h166v43 M72 109V66 M237 22v44"/><rect x="113" y="54" width="41" height="24" rx="4" fill="#f9e0cf" stroke-width="2"/><path d="M118 66h6l3-6 4 13 4-9 3 2h9"/></g>
+</g></symbol></defs></svg>
+<header><div class="wrap nav"><a class="brand" href="#overview"><svg aria-hidden="true"><use href="#mark"/></svg>BrakeWitness</a><nav aria-label="Main navigation"><a href="#overview">Overview</a><a href="#architecture">Architecture</a><a href="#simulator">Simulator</a></nav><button id="motion" aria-pressed="false"><span class="switch"></span>Reduce motion</button></div></header>
+<main id="main"><section class="hero wrap" id="overview">
+<div><div class="eyebrow"><i></i>[ secure event recording ]</div><h1>Brake<span>Witness</span></h1><h2>A black box for autonomous<br>braking incidents.</h2><p>Trace a braking event from the first sensor reading to a signed evidence record. Replay the incident and see exactly what changed.</p>
+<div class="actions"><a class="primary" href="#simulator">Open simulator <b>↗</b></a><a class="secondary" href="#architecture">How it works <b>↓</b></a></div><small>ⓘ &nbsp;Software simulation. No physical hardware is connected.</small></div>
+<figure class="panel"><figcaption><strong><i></i> Vehicle schematic</strong><span>FIG. 01 / TOP VIEW</span></figcaption>
+<svg class="drawing" viewBox="0 0 510 240" role="img" aria-label="Top view of a vehicle. Wheel sensors send brake data to the central event recorder.">
+<rect width="510" height="240" fill="url(#grid)"/><g fill="none" stroke="#a8a99d"><path d="M15 22v-8h8 M487 14h8v8 M15 218v8h8 M487 226h8v-8"/><path d="M26 120h458" stroke-dasharray="7 6"/></g>
+<use href="#vehicle" x="64" y="62" width="336" height="143"/>
+<g fill="none" stroke="#ac432b"><path d="M212 132V54l19-19h69 M140 185v20l-12 12H58"/><circle cx="212" cy="132" r="4" fill="#af432b"/><path class="radar" d="M404 113q12 18 0 36 M414 106q17 25 0 50 M424 99q23 31 0 63"/><circle cx="140" cy="185" r="3" fill="#af432b"/></g><g class="svgtype"><text x="232" y="30">EVENT RECORDER</text><text x="56" y="231">WHEEL SENSOR</text></g>
+</svg><div class="trace"><span>BRAKE SIGNAL</span><svg viewBox="0 0 250 30" aria-hidden="true"><path d="M0 23h41l4-3 3 3h28l5-5 5 4h18l4-3 5 3 7-17 5 20 6-16 5 9h17l6-3 6 5h85"/><circle class="signal" cx="122" cy="8" r="3"/></svg><em>● &nbsp;DEMO</em></div></figure></section>
+<section class="section wrap" id="architecture"><div class="eyebrow">01 / Architecture</div><h2>Four parts. Four separate jobs.</h2><div class="cards" id="cards"></div></section>
+<section class="section wrap" id="journey"><div class="eyebrow">02 / Evidence flow</div><h2>The data journey.</h2><div class="flow"><div class="nodes" id="nodes"></div><svg class="route" viewBox="0 0 800 34" preserveAspectRatio="none" aria-hidden="true">
+  <path class="wire" d="M12 7H788M788 7v18H12"/>
+  <path class="packet" d="M12 7H788"/>
+  <path class="packet return" d="M788 25H12"/>
+</svg><div class="lane"><strong>TAMPER CHECK</strong><span>Recompute hash → Check signature → Check previous link</span></div></div></section>
+<section class="section wrap" id="simulator"><div class="eyebrow">03 / Simulator</div><h2>Simulation workbench.</h2><p>Choose an incident, then run the scene or advance one sample at a time.</p>
+<div class="bench"><div class="scenarios" id="scenarios" role="group" aria-label="Scenario"></div>
+<div class="controls"><button id="run" class="primary">▶ Run</button><button id="step">Step →</button><button id="reset">Reset</button><label>Speed <select id="rate"><option>0.5</option><option selected>1</option><option>2</option><option>5</option><option>10</option></select> ×</label><label>Seed <input id="seed" type="number" min="0" max="4294967295" step="1" value="42"></label></div>
+<svg viewBox="0 0 780 104" class="road" role="img" aria-label="Vehicle position and braking state along a simulated road"><rect width="780" height="104" fill="url(#grid)"/><path d="M10 24h760M10 80h760" stroke="#b3b4a9"/><path d="M10 52h760" stroke="#b3b4a9" stroke-dasharray="15 10"/><rect id="target" x="715" y="32" width="14" height="40" fill="url(#hatch)" stroke="#ae4028"/><g id="car"><use href="#vehicle" width="90" height="40" y="32"/></g></svg>
+<p id="status" role="status"></p><dl class="metrics" id="metrics"></dl></div></section>
+<section class="section wrap" id="evidence"><div class="eyebrow">04 / Investigation</div><h2>Evidence replay.</h2><p>Inspect a captured sample and verify its signed sensor readings.</p>
+<div class="bench"><div class="controls"><label>Sample <input id="cursor" type="range" min="1" max="1" value="1" disabled></label><button id="verify" disabled>Verify chain</button><button id="json" disabled>Export JSON ↓</button><button id="csv" disabled>Export CSV ↓</button></div><div id="detail">Awaiting a braking event.</div><p id="audit" role="status"></p></div></section></main>
+<footer><div class="wrap"><strong>BrakeWitness</strong><span>Malluri Sai Raghu · KL University, Vijayawada</span><a href="#overview">Back to top ↑</a><a href="#simulator">Simulator</a></div></footer>
+</body></html>
