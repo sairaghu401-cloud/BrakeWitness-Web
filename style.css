@@ -587,3 +587,48 @@ html.reduced {
     stroke-dashoffset:-795;
   }
 }
+
+/* Workbench additions use the original page palette and typography. */
+[hidden]{display:none!important}
+main h3{letter-spacing:-.03em}
+.flow .nodes{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+.flow .node{font-size:14px;padding-right:14px}
+.node .icon{flex-shrink:0}
+#checks{display:flex;flex-wrap:wrap;gap:8px 18px;list-style:none;padding:0;margin:0}
+#checks li::before{content:"› ";color:var(--accent)}
+#checks .failed,.difference{background:var(--pale);color:#812d1c}
+.failed{font-weight:700}
+.caption,caption{color:var(--muted);font-size:13px;text-align:left}
+.caption{margin-top:8px}
+.scene{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.scene figcaption{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;font:12px var(--mono)}
+#car,#hazard{transition:transform var(--frame,0.3s) linear}
+.scrub input{width:clamp(95px,18vw,230px)}
+input[type=range]{accent-color:var(--accent)}
+#edit-note,.verdict,.limitations{border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--card)}
+#edit-note{background:var(--pale);border-color:#b97764;animation:record-in .4s ease-out}
+#edit-note a{text-decoration:underline}
+@keyframes record-in{from{transform:translateY(-8px);opacity:.4}to{transform:none;opacity:1}}
+.comparison{display:grid;grid-template-columns:1fr 1fr;gap:4%;margin:24px 0}
+.comparison>*{min-width:0}
+.comparison h3,.bench h3,.limitations h3{margin:0 0 5px;font-size:21px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+caption{padding:3px 0 10px}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:7px 8px}
+th{font-weight:600}
+#graph{width:100%;display:block;max-height:182px}
+#graph text{fill:var(--muted);font:11px var(--mono)}
+.keyline{display:inline-block;width:20px;border-top:3px solid var(--accent);vertical-align:middle}
+.reference{border-top:2px dashed var(--ink)}
+.scrollbox{overflow:auto;max-width:100%}
+.timeline{font:12px/1.4 var(--mono);white-space:nowrap}
+.timeline th:first-child{position:sticky;left:0;background:var(--card);z-index:1}
+.timeline .current{box-shadow:inset 0 -2px var(--accent)}
+.verdict{background:var(--paper);margin:12px 0}
+.verdict h3{margin-top:6px}
+details summary{cursor:pointer;font-weight:600}
+#detail{white-space:pre-wrap;max-height:440px;overflow:auto}
+.limitations{margin-top:16px}
+.limitations p+p{margin-top:8px}
+@media(max-width:950px){.flow .nodes{grid-template-columns:1fr}.flow .node:not(:last-child):after{content:"↓";position:static;margin-left:8px}}
+@media(max-width:700px){.comparison{grid-template-columns:1fr;gap:22px}.bench,.flow{min-width:0}.flow .lane{align-items:flex-start}th,td{padding:6px 4px}}
