@@ -35,6 +35,9 @@ async function checkpoint(session) {
   const head = session.records.at(-1).hash;
   return Object.freeze({count, head, mac: await tag(session.key, ['checkpoint', count, head])});
 }
+function eventId(second) {
+  return 'EV-' + String(second + 1).padStart(2, '0');
+}
 async function verify(session) {
   let previous = genesis;
   for (const [index, record] of session.records.entries()) {
@@ -46,6 +49,9 @@ async function verify(session) {
       return failure(0, 'Recomputed SHA-256 differs from the sealed hash.');
     if (!await authentic(session.key, ['record', record.hash], record.hmac_sha256))
       return failure(1, 'The record HMAC does not authenticate this hash.');
+    // A valid old record still belongs to exactly one position in this drive.
+    if (record.event_id !== eventId(index) || record.timestamp_s !== index)
+      return failure(2, 'Record number or time is out of sequence. Expected '+eventId(index)+' at '+index+' s.');
     if (record.previous_hash !== previous)
       return failure(2, 'Previous hash does not match the preceding record.');
     previous = record.hash;
@@ -57,7 +63,7 @@ async function verify(session) {
   if (cp.count !== session.records.length)
     return fail('Checkpoint expects '+cp.count+' records. Found '+session.records.length+'.');
   if (cp.head !== previous) return fail('Final hash differs from the session checkpoint.');
-  return {ok:true, reason:'All 12 hashes, HMACs and links match the authenticated checkpoint.'};
+  return {ok:true, reason:'All 12 records are authentic and in order. The final hash and count match the checkpoint.'};
 }
 
 // Both drives consume identical noise at every second. Seed affects clear-road brightness only.
@@ -72,7 +78,7 @@ function drive(kind, seed) {
     const detected = brightness < 100;
     const controller = detected ? 'Brake' : 'Release';
     const actuator = kind === 3 && window ? 'Brake' : controller;
-    const reading = {simulated:true, timestamp_s:t, event_id:'EV-'+String(t + 1).padStart(2,'0'),
+    const reading = {simulated:true, timestamp_s:t, event_id:eventId(t),
       speed_kmh:speed, road_observation:obstacle ? 'Cone' : 'Clear',
       camera_observation:{brightness, obstacle_detected:detected},
       controller_command:controller, actuator_command:actuator};
@@ -131,6 +137,9 @@ const watchFor = [
 const hero = document.querySelector('.hero p');
 hero.textContent = 'A cone, a shadow and an unexpected command can all slow a car from 60 to 36 km/h. BrakeWitness checks the recorded evidence, then explains which one happened.';
 document.querySelector('#simulator > p').textContent = 'Start with the shadow drive. Press Run to watch it unfold, or jump to 4 seconds to inspect the first braking command.';
+$('checks').children[2].textContent = 'Check order and previous link';
+document.querySelector('.limitations').insertAdjacentHTML('beforebegin',
+  '<aside class="limitations"><h3>What does BrakeWitness protect?</h3><p>The recorder checks for edited readings, repeated records, changed order and missing records at the end of a drive. If a check fails, it withholds the braking diagnosis.</p><p>A Brake command arriving when the controller sent Release is flagged for investigation. This simulation has no control over physical brakes.</p></aside>');
 const scenarioBar = $('scenarios');
 scenarioBar.insertAdjacentHTML('beforebegin','<h3>Choose a simulated drive</h3>');
 scenarioBar.insertAdjacentHTML('afterend','<section class="verdict" aria-labelledby="case-question"><h3 id="case-question"></h3><p id="watch-for"></p></section>');
